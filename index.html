@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ROLEX — Premium Soatlar</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-logo">ROLEX <span>TOSHKENT</span></div>
+  <button class="nav-cart" onclick="openCart()">
+    🛒 Savat <span class="cart-count" id="cartCount">0</span>
+  </button>
+</div>
+
+<!-- MAIN PAGE -->
+<div id="mainPage" class="pb">
+  <div class="hero">
+    <div class="hero-crown">👑</div>
+    <h1>ROLEX</h1>
+    <div class="hero-line"></div>
+    <p>PREMIUM SOATLAR KOLLEKSIYASI</p>
+    <p style="font-size:11px;margin-top:4px;color:#6a6050">32 eksklyuziv model • Toshkent</p>
+  </div>
+
+  <div class="search-wrap">
+    <input class="search-input" type="text" placeholder="🔍  Soat nomi yoki kolleksiya..." id="searchInput" oninput="applyFilters()">
+  </div>
+
+  <div class="filters">
+    <div class="filter-title">Kategoriya bo'yicha filter</div>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setFilter('cat','all',this)">Barchasi</button>
+      <button class="filter-btn" onclick="setFilter('cat','sport',this)">⚡ Sport</button>
+      <button class="filter-btn" onclick="setFilter('cat','classic',this)">🕐 Klassik</button>
+      <button class="filter-btn" onclick="setFilter('cat','luxury',this)">💎 Luksus</button>
+    </div>
+    <div class="price-row">
+      <label>Narx:</label>
+      <input class="price-slider" type="range" min="5000" max="100000" step="500" value="100000" id="priceSlider" oninput="applyFilters()">
+      <span class="price-val" id="priceVal">Barchasi</span>
+    </div>
+  </div>
+
+  <div class="catalog-header">
+    <span>Topildi: <strong id="countLabel">32</strong> ta soat</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="no-results" id="noResults" style="display:none">😔 Hech narsa topilmadi</div>
+</div>
+
+<!-- DETAIL PAGE -->
+<div class="detail-page" id="detailPage">
+  <div class="detail-back" onclick="closePage('detailPage')">← Katalogga qaytish</div>
+  <div class="detail-watch-wrap" id="dWatchFace"></div>
+  <div class="detail-body">
+    <div class="detail-collection" id="dColl"></div>
+    <div class="detail-name" id="dName"></div>
+    <div class="detail-desc" id="dDesc"></div>
+    <div class="detail-price-block">
+      <div><div class="detail-price-label">NARXI</div><div class="detail-price" id="dPrice"></div></div>
+      <div style="color:var(--text2);font-size:11px">Kafolat:<br><span style="color:var(--gold)">5 yil ✓</span></div>
+    </div>
+    <div class="specs-title">TEXNIK MA'LUMOTLAR</div>
+    <div id="dSpecs"></div>
+  </div>
+  <div class="detail-actions">
+    <button class="btn-cart" id="dCartBtn" onclick="addFromDetail()">🛒 Savatga qo'shish</button>
+    <button class="btn-fav" title="Sevimlilarga qo'shish" onclick="showToast('❤️ Sevimlilarga qo\'shildi')">♡</button>
+  </div>
+</div>
+
+<!-- CART PAGE -->
+<div class="cart-page" id="cartPage">
+  <div class="detail-back" onclick="closePage('cartPage')">← Orqaga</div>
+  <div id="cartBody"></div>
+</div>
+
+<!-- LOCATION PAGE -->
+<div class="location-page" id="locationPage">
+  <div class="detail-back" onclick="closePage('locationPage')">← Orqaga</div>
+  <div style="padding:16px 16px 8px">
+    <div style="color:var(--gold-dim);font-size:10px;letter-spacing:2px;text-transform:uppercase">Bizning manzil</div>
+    <div style="font-size:20px;color:var(--text);margin-top:4px">ROLEX Toshkent</div>
+  </div>
+  <div class="map-box" onclick="openMap()">
+    <div class="map-box-icon">🗺️</div>
+    <p>Google Maps da ochish</p>
+    <small>Yunusobod tumani, Toshkent</small>
+  </div>
+  <div class="location-card">
+    <div class="location-row">
+      <div class="loc-icon">📍</div>
+      <div><div class="loc-label">Manzil</div><div class="loc-val">Yunusobod tumani, 19-kvartal<br>Toshkent, O'zbekiston</div></div>
+    </div>
+    <div class="location-row">
+      <div class="loc-icon">🕐</div>
+      <div><div class="loc-label">Ish vaqti</div><div class="loc-val">Dushanba – Shanba: 10:00 – 20:00<br>Yakshanba: 11:00 – 18:00</div></div>
+    </div>
+    <div class="location-row">
+      <div class="loc-icon">📞</div>
+      <div><div class="loc-label">Telefon</div><div class="loc-val">+998 71 123 45 67</div></div>
+    </div>
+    <div class="location-row">
+      <div class="loc-icon">💬</div>
+      <div><div class="loc-label">Telegram</div><div class="loc-val">@rolex_tashkent</div></div>
+    </div>
+    <div class="location-row">
+      <div class="loc-icon">📦</div>
+      <div><div class="loc-label">Yetkazib berish</div><div class="loc-val">Toshkent bo'ylab bepul<br>Butun O'zbekiston — 2-3 kun</div></div>
+    </div>
+  </div>
+  <button class="btn-call" onclick="callStore()">📞 Hozir qo'ng'iroq qilish</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="bn-item active" id="bn0" onclick="switchTab(0)">
+    <div class="bn-icon">⌚</div><div>KATALOG</div>
+  </div>
+  <div class="bn-item" id="bn1" onclick="openCart(); switchTab(1)">
+    <div class="bn-icon">🛒</div><div>SAVAT</div>
+  </div>
+  <div class="bn-item" id="bn2" onclick="openLocation(); switchTab(2)">
+    <div class="bn-icon">📍</div><div>MANZIL</div>
+  </div>
+</div>
+
+<script src="watches.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
