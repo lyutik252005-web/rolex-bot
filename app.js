@@ -2,8 +2,8 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
 // ⚙️ SOZLAMALAR — shu yerga o'z bot tokeningni va chat ID ni yoz
-const BOT_TOKEN = 'SENING_BOT_TOKENINGNI_YOZ'; // @BotFather dan olgan token
-const ADMIN_CHAT_ID = 'SENING_CHAT_ID_ING';     // Quyida qanday olishni tushuntirdim
+const BOT_TOKEN = '8690529348:AAH0qZ_TtqlFq6HOMNWXcv00ErT9HXIzVoA'; // @BotFather dan olgan token
+const ADMIN_CHAT_ID = ' 1422621616';     // Quyida qanday olishni tushuntirdim
 
 let cart = JSON.parse(localStorage.getItem('rolexCart') || '[]');
 let currentFilter = { cat: 'all', maxPrice: 100000, search: '' };
