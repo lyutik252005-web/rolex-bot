@@ -17,7 +17,7 @@
   </button>
 </div>
 
-<!-- MAIN PAGE -->
+<!-- BOSH SAHIFA -->
 <div id="mainPage" class="pb">
   <div class="hero">
     <div class="hero-crown">👑</div>
@@ -37,7 +37,7 @@
       <button class="filter-btn active" onclick="setFilter('cat','all',this)">Barchasi</button>
       <button class="filter-btn" onclick="setFilter('cat','sport',this)">⚡ Sport</button>
       <button class="filter-btn" onclick="setFilter('cat','classic',this)">🕐 Klassik</button>
-      <button class="filter-btn" onclick="setFilter('cat','luxury',this)">💎 Luksus</button>
+      <button class="filter-btn" onclick="setFilter('cat','luxury',this)">💎 Lyuks</button>
     </div>
     <div class="price-row">
       <label>Narx:</label>
@@ -49,39 +49,38 @@
   <div class="catalog-header">
     <span>Topildi: <strong id="countLabel">32</strong> ta soat</span>
   </div>
-
   <div class="grid" id="grid"></div>
   <div class="no-results" id="noResults" style="display:none">😔 Hech narsa topilmadi</div>
 </div>
 
-<!-- DETAIL PAGE -->
+<!-- DETAIL SAHIFA -->
 <div class="detail-page" id="detailPage">
   <div class="detail-back" onclick="closePage('detailPage')">← Katalogga qaytish</div>
-  <div class="detail-watch-wrap" id="dWatchFace"></div>
+  <div id="dWatchFace"></div>
   <div class="detail-body">
     <div class="detail-collection" id="dColl"></div>
     <div class="detail-name" id="dName"></div>
     <div class="detail-desc" id="dDesc"></div>
     <div class="detail-price-block">
       <div><div class="detail-price-label">NARXI</div><div class="detail-price" id="dPrice"></div></div>
-      <div style="color:var(--text2);font-size:11px">Kafolat:<br><span style="color:var(--gold)">5 yil ✓</span></div>
+      <div style="color:var(--text2);font-size:11px;text-align:right">Kafolat:<br><span style="color:var(--gold)">5 yil ✓</span></div>
     </div>
     <div class="specs-title">TEXNIK MA'LUMOTLAR</div>
     <div id="dSpecs"></div>
   </div>
   <div class="detail-actions">
     <button class="btn-cart" id="dCartBtn" onclick="addFromDetail()">🛒 Savatga qo'shish</button>
-    <button class="btn-fav" title="Sevimlilarga qo'shish" onclick="showToast('❤️ Sevimlilarga qo\'shildi')">♡</button>
+    <button class="btn-fav" onclick="showToast('❤️ Sevimlilarga qo\'shildi')">♡</button>
   </div>
 </div>
 
-<!-- CART PAGE -->
+<!-- SAVAT SAHIFA -->
 <div class="cart-page" id="cartPage">
   <div class="detail-back" onclick="closePage('cartPage')">← Orqaga</div>
   <div id="cartBody"></div>
 </div>
 
-<!-- LOCATION PAGE -->
+<!-- MANZIL SAHIFA -->
 <div class="location-page" id="locationPage">
   <div class="detail-back" onclick="closePage('locationPage')">← Orqaga</div>
   <div style="padding:16px 16px 8px">
@@ -118,10 +117,47 @@
   <button class="btn-call" onclick="callStore()">📞 Hozir qo'ng'iroq qilish</button>
 </div>
 
+<!-- BUYURTMA MODALI -->
+<div class="modal-overlay" id="orderModal" style="display:none" onclick="if(event.target===this)closeOrderForm()">
+  <div class="modal">
+    <div class="modal-title">📋 Buyurtma rasmiylashtirishи</div>
+    <div class="modal-subtitle">Ma'lumotlarni to'ldiring — siz bilan bog'lanamiz</div>
+    <div class="form-group">
+      <label class="form-label">Ismingiz *</label>
+      <input class="form-input" id="orderName" type="text" placeholder="Masalan: Aziz Karimov">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Telefon raqami *</label>
+      <input class="form-input" id="orderPhone" type="tel" placeholder="+998 90 123 45 67">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Izoh (ixtiyoriy)</label>
+      <input class="form-input" id="orderNote" type="text" placeholder="Yetkazib berish manzili...">
+    </div>
+    <button class="btn-order" id="orderSubmitBtn" onclick="submitOrder()">📩 Buyurtmani yuborish</button>
+    <button class="btn-cancel" onclick="closeOrderForm()">Bekor qilish</button>
+  </div>
+</div>
+
+<!-- MUVAFFAQIYAT MODALI -->
+<div class="modal-overlay" id="successModal" style="display:none">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:56px;margin-bottom:12px">✅</div>
+    <div class="modal-title">Buyurtma qabul qilindi!</div>
+    <div style="color:var(--text2);font-size:13px;margin:10px 0 6px">Rahmat, <span id="successName" style="color:var(--gold)"></span>!</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:20px">Tez orada siz bilan bog'lanamiz 🤝</div>
+    <div style="background:var(--dark3);border-radius:8px;padding:12px;margin-bottom:16px">
+      <div style="color:var(--text2);font-size:11px">Buyurtma summasi</div>
+      <div style="color:var(--gold);font-size:22px;font-weight:bold" id="successTotal"></div>
+    </div>
+    <button class="btn-order" onclick="closeSuccess()">Yaxshi, rahmat!</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- BOTTOM NAV -->
+<!-- PASTKI MENYU -->
 <div class="bottom-nav">
   <div class="bn-item active" id="bn0" onclick="switchTab(0)">
     <div class="bn-icon">⌚</div><div>KATALOG</div>
