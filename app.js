@@ -1,259 +1,34 @@
-const tg = window.Telegram?.WebApp;
-if (tg) { tg.ready(); tg.expand(); }
-
-// ⚙️ SOZLAMALAR — shu yerga o'z bot tokeningni va chat ID ni yoz
-const BOT_TOKEN = '8690529348:AAH0qZ_TtqlFq6HOMNWXcv00ErT9HXIzVoA'; // @BotFather dan olgan token
-const ADMIN_CHAT_ID = '1422621616';     // Quyida qanday olishni tushuntirdim
-
-let cart = JSON.parse(localStorage.getItem('rolexCart') || '[]');
-let currentFilter = { cat: 'all', maxPrice: 100000, search: '' };
-let currentWatch = null;
-
-document.addEventListener('DOMContentLoaded', () => { renderGrid(); updateCartCount(); });
-
-// ── SOAT RASMI (foto bo'lsa rasm, bo'lmasa chiroyli emoji soat) ──
-function watchFace(w, size = 'small') {
-  const hasPhoto = w.image && w.image.length > 0;
-
-  if (size === 'big') {
-    if (hasPhoto) {
-      return `<div class="detail-watch-wrap">
-        <img src="${w.image}" alt="${w.name}" class="detail-photo"
-          onerror="this.style.display='none'; document.getElementById('dFallback').style.display='flex'">
-        <div id="dFallback" class="detail-watch-big" style="display:none">
-          <span class="detail-emoji">${w.emoji}</span>
-          <div class="detail-crown"></div>
-        </div>
-      </div>`;
-    }
-    return `<div class="detail-watch-wrap">
-      <div class="detail-watch-big">
-        <span class="detail-emoji">${w.emoji}</span>
-        <div class="detail-crown"></div>
-      </div>
-    </div>`;
-  }
-
-  // Kichik karta uchun
-  if (hasPhoto) {
-    return `<div class="card-face">
-      <img src="${w.image}" alt="${w.name}" class="card-photo"
-        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-      <div class="card-face-fallback" style="display:none">
-        <div class="watch-lug top-left"></div><div class="watch-lug top-right"></div>
-        <div class="watch-lug bot-left"></div><div class="watch-lug bot-right"></div>
-        <div class="watch-circle"><span class="watch-emoji">${w.emoji}</span><div class="watch-crown"></div></div>
-      </div>
-      <div class="card-badge">${w.ref}</div>
-    </div>`;
-  }
-
-  return `<div class="card-face">
-    <div class="watch-lug top-left"></div><div class="watch-lug top-right"></div>
-    <div class="watch-lug bot-left"></div><div class="watch-lug bot-right"></div>
-    <div class="watch-circle"><span class="watch-emoji">${w.emoji}</span><div class="watch-crown"></div></div>
-    <div class="card-badge">${w.ref}</div>
-  </div>`;
-}
-
-// ── GRID ──
-function renderGrid() {
-  const grid = document.getElementById('grid');
-  const noResults = document.getElementById('noResults');
-  const s = currentFilter.search.toLowerCase();
-  const filtered = watches.filter(w => {
-    const catOk = currentFilter.cat === 'all' || w.category === currentFilter.cat;
-    const priceOk = w.price <= currentFilter.maxPrice;
-    const searchOk = !s || w.name.toLowerCase().includes(s) || w.collection.toLowerCase().includes(s);
-    return catOk && priceOk && searchOk;
-  });
-  document.getElementById('countLabel').textContent = filtered.length;
-  if (!filtered.length) { grid.innerHTML = ''; noResults.style.display = 'block'; return; }
-  noResults.style.display = 'none';
-  grid.innerHTML = filtered.map((w, i) => `
-    <div class="card" onclick="openDetail(${w.id})" style="animation-delay:${i*0.04}s">
-      ${watchFace(w)}
-      <div class="card-info">
-        <div class="card-collection">${w.collection}</div>
-        <div class="card-name">${w.name}</div>
-        <div class="card-price">$${w.price.toLocaleString()} <span>USD</span></div>
-      </div>
-    </div>`).join('');
-}
-
-// ── FILTRLAR ──
-function setFilter(type, val, btn) {
-  currentFilter[type] = val;
-  btn.closest('.filter-row').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderGrid();
-}
-function applyFilters() {
-  const val = parseInt(document.getElementById('priceSlider').value);
-  currentFilter.maxPrice = val;
-  currentFilter.search = document.getElementById('searchInput').value;
-  document.getElementById('priceVal').textContent = val >= 100000 ? 'Barchasi' : '$' + val.toLocaleString();
-  renderGrid();
-}
-
-// ── DETAIL ──
-function openDetail(id) {
-  const w = watches.find(x => x.id === id);
-  if (!w) return;
-  currentWatch = w;
-  document.getElementById('dWatchFace').innerHTML = watchFace(w, 'big');
-  document.getElementById('dColl').textContent = w.collection;
-  document.getElementById('dName').textContent = w.name;
-  document.getElementById('dDesc').textContent = w.desc;
-  document.getElementById('dPrice').textContent = '$' + w.price.toLocaleString();
-  const inCart = cart.find(c => c.id === w.id);
-  document.getElementById('dCartBtn').textContent = inCart ? '✅ Savatda bor' : '🛒 Savatga qo\'shish';
-  document.getElementById('dSpecs').innerHTML = `
-    <div class="spec-row"><span class="spec-label">Referans</span><span class="spec-val">${w.ref}</span></div>
-    <div class="spec-row"><span class="spec-label">Diametr</span><span class="spec-val">${w.diameter} mm</span></div>
-    <div class="spec-row"><span class="spec-label">Material</span><span class="spec-val">${w.material}</span></div>
-    <div class="spec-row"><span class="spec-label">Siferblat</span><span class="spec-val">${w.dial}</span></div>
-    <div class="spec-row"><span class="spec-label">Suv o'tkazmasligi</span><span class="spec-val">${w.water} m</span></div>
-    <div class="spec-row"><span class="spec-label">Kategoriya</span><span class="spec-val">${w.category === 'sport' ? '⚡ Sport' : w.category === 'classic' ? '🕐 Klassik' : '💎 Lyuks'}</span></div>`;
-  const p = document.getElementById('detailPage');
-  p.style.display = 'block'; p.scrollTop = 0; p.className = 'detail-page slide-in';
-}
-
-function addFromDetail() {
-  if (!currentWatch) return;
-  if (cart.find(c => c.id === currentWatch.id)) { showToast('✅ Allaqachon savatda!'); return; }
-  cart.push({...currentWatch});
-  saveCart();
-  document.getElementById('dCartBtn').textContent = '✅ Savatda bor';
-  showToast('🛒 Savatga qo\'shildi!');
-}
-
-// ── SAVAT ──
-function openCart() {
-  renderCart();
-  const p = document.getElementById('cartPage');
-  p.style.display = 'block'; p.scrollTop = 0; p.className = 'cart-page slide-in';
-}
-function renderCart() {
-  const body = document.getElementById('cartBody');
-  if (!cart.length) {
-    body.innerHTML = '<div class="empty-cart"><div>🛒</div><p>Savat bo\'sh</p><p style="font-size:12px;margin-top:8px;color:var(--text2)">Katalogdan soat tanlang</p></div>';
-    return;
-  }
-  const total = cart.reduce((s, w) => s + w.price, 0);
-  body.innerHTML = cart.map(w => `
-    <div class="cart-item">
-      <div class="cart-face">
-        ${w.image ? `<img src="${w.image}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'">` : w.emoji}
-      </div>
-      <div class="cart-info">
-        <div class="cart-item-name">${w.name}</div>
-        <div class="cart-item-price">$${w.price.toLocaleString()}</div>
-      </div>
-      <button class="cart-remove" onclick="removeFromCart(${w.id})">✕</button>
-    </div>`).join('') +
-  `<div class="cart-total-block">
-    <div class="cart-total-row"><span>Soatlar soni</span><span>${cart.length} ta</span></div>
-    <div class="cart-total-row"><span>Yetkazib berish</span><span style="color:var(--gold)">Bepul</span></div>
-    <div class="cart-total-row main"><span>JAMI</span><span>$${total.toLocaleString()}</span></div>
-    <button class="btn-order" onclick="openOrderForm()">📋 Buyurtma berish</button>
-  </div>`;
-}
-function removeFromCart(id) {
-  cart = cart.filter(w => w.id !== id);
-  saveCart(); renderCart(); showToast('🗑️ O\'chirildi');
-}
-
-// ── BUYURTMA FORMASI ──
-function openOrderForm() {
-  if (!cart.length) return;
-  document.getElementById('orderModal').style.display = 'flex';
-}
-function closeOrderForm() {
-  document.getElementById('orderModal').style.display = 'none';
-}
-
-async function submitOrder() {
-  const name = document.getElementById('orderName').value.trim();
-  const phone = document.getElementById('orderPhone').value.trim();
-  const note = document.getElementById('orderNote').value.trim();
-
-  if (!name) { showToast('❗ Ismingizni kiriting'); return; }
-  if (!phone) { showToast('❗ Telefon raqamingizni kiriting'); return; }
-
-  const btn = document.getElementById('orderSubmitBtn');
-  btn.textContent = '⏳ Yuborilmoqda...';
-  btn.disabled = true;
-
-  const total = cart.reduce((s, w) => s + w.price, 0);
-  const itemsList = cart.map((w, i) => `${i+1}. ${w.emoji} <b>${w.name}</b> — <b>$${w.price.toLocaleString()}</b>`).join('\n');
-
-  const message = `
-🆕 <b>YANGI BUYURTMA!</b>
-━━━━━━━━━━━━━━━━━━
-👤 <b>Mijoz:</b> ${name}
-📞 <b>Telefon:</b> ${phone}
-${note ? `📝 <b>Izoh:</b> ${note}\n` : ''}
-━━━━━━━━━━━━━━━━━━
-⌚ <b>BUYURTMA:</b>
-${itemsList}
-━━━━━━━━━━━━━━━━━━
-💰 <b>JAMI: $${total.toLocaleString()}</b>
-🚚 Yetkazib berish: <b>BEPUL</b>
-━━━━━━━━━━━━━━━━━━
-🕐 ${new Date().toLocaleString('ru-RU')}
-  `.trim();
-
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'HTML' })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      closeOrderForm();
-      cart = []; saveCart(); renderCart(); closePage('cartPage');
-      showSuccessScreen(name, total);
-    } else {
-      throw new Error('Telegram API xatosi');
-    }
-  } catch (e) {
-    // Agar token hali kiritilmagan bo'lsa — demo rejim
-    closeOrderForm();
-    cart = []; saveCart(); renderCart(); closePage('cartPage');
-    showSuccessScreen(name, total);
-  }
-  btn.textContent = '📩 Buyurtmani yuborish'; btn.disabled = false;
-}
-
-function showSuccessScreen(name, total) {
-  document.getElementById('successName').textContent = name;
-  document.getElementById('successTotal').textContent = '$' + total.toLocaleString();
-  document.getElementById('successModal').style.display = 'flex';
-}
-function closeSuccess() {
-  document.getElementById('successModal').style.display = 'none';
-}
-
-// ── MANZIL ──
-function openLocation() {
-  const p = document.getElementById('locationPage');
-  p.style.display = 'block'; p.scrollTop = 0; p.className = 'location-page slide-in';
-}
-function openMap() {
-  const url = 'https://maps.google.com/?q=41.3111,69.2797';
-  if (tg) tg.openLink(url); else window.open(url, '_blank');
-}
-function callStore() { window.location.href = 'tel:+998711234567'; }
-
-// ── YORDAMCHI ──
-function closePage(id) { document.getElementById(id).style.display = 'none'; }
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
-}
-function saveCart() { localStorage.setItem('rolexCart', JSON.stringify(cart)); updateCartCount(); }
-function updateCartCount() { document.getElementById('cartCount').textContent = cart.length; }
-function switchTab(n) { [0,1,2].forEach(i => document.getElementById('bn'+i).classList.toggle('active', i===n)); }
+const watches = [
+  { id: 1,  name: "Submariner Date",           collection: "Submariner",    price: 14550, category: "sport",   material: "Po'lat",           dial: "Qora",      diameter: 41, water: 300,  ref: "126610LN",   emoji: "🖤", desc: "Dengiz tubiga mo'ljallangan professional soat. 1953-yildan beri ishlab chiqarilmoqda." , image: "https://lyutik252005-web.github.io/rolex-bot/submariner-date-black-41-mm.webp" },
+  { id: 2,  name: "Submariner No Date",         collection: "Submariner",    price: 12950, category: "sport",   material: "Po'lat",           dial: "Qora",      diameter: 41, water: 300,  ref: "124060",     emoji: "⬛", desc: "Sana ko'rsatkichsiz klassik Submariner. Soddalik va mustahkamlikning ramzi." , image: "https://lyutik252005-web.github.io/rolex-bot/submariner-no-date.webp" },
+  { id: 3,  name: "Submariner Blue Gold",       collection: "Submariner",    price: 39650, category: "luxury",  material: "18k Sariq Oltin",  dial: "Ko'k",      diameter: 41, water: 300,  ref: "126618LB",   emoji: "💙", desc: "Oltin qobiqli hashamatli Submariner. Ko'k siferblat bilan ajoyib kontrast." , image: "https://lyutik252005-web.github.io/rolex-bot/submariner-blue-gold.webp" },
+  { id: 4,  name: "Daytona White Gold",         collection: "Daytona",       price: 36550, category: "sport",   material: "18k Oq Oltin",     dial: "Qora",      diameter: 40, water: 100,  ref: "116519LN",   emoji: "🤍", desc: "Yarish avtomobillari ruhidagi xronograf. Oq oltin qobiq bilan eksklyuziv model." , image: "https://lyutik252005-web.github.io/rolex-bot/daytona-white-gold.webp" },
+  { id: 5,  name: "Daytona Steel",              collection: "Daytona",       price: 29150, category: "sport",   material: "Po'lat",           dial: "Oq",        diameter: 40, water: 100,  ref: "116500LN",   emoji: "🏁", desc: "Eng mashhur Rolex modeli. Kutish ro'yxatisiz topish deyarli mumkin emas." , image: "https://lyutik252005-web.github.io/rolex-bot/daytona-steel.webp" },
+  { id: 6,  name: "Daytona Yellow Gold",        collection: "Daytona",       price: 37450, category: "luxury",  material: "18k Sariq Oltin",  dial: "Sariq",     diameter: 40, water: 100,  ref: "116508",     emoji: "💛", desc: "Sariq oltin qobiqli klassik xronograf. Rolex tarixining eng ikonik modeli." , image: "https://lyutik252005-web.github.io/rolex-bot/daytona-yellow-gold.jpg" },
+  { id: 7,  name: "GMT-Master II Pepsi",        collection: "GMT-Master II", price: 17450, category: "sport",   material: "Po'lat",           dial: "Qora",      diameter: 40, water: 100,  ref: "126710BLRO", emoji: "🔴", desc: "Ko'k-qizil 'Pepsi' bezel. Ikkita vaqt mintaqasini bir vaqtda ko'rsatadi." , image: "https://lyutik252005-web.github.io/rolex-bot/gmt-master-2-pepsi.png" },
+  { id: 8,  name: "GMT-Master II Batman",       collection: "GMT-Master II", price: 17950, category: "sport",   material: "Po'lat",           dial: "Qora",      diameter: 40, water: 100,  ref: "126710BLNR", emoji: "🦇", desc: "Ko'k-qora 'Batman' bezel. Zamonaviy dizaynerlarning sevimli modeli." , image: "https://lyutik252005-web.github.io/rolex-bot/gmt-master-2-batman.webp" },
+  { id: 9,  name: "GMT-Master II Root Beer",    collection: "GMT-Master II", price: 38550, category: "luxury",  material: "18k Ikki Rangli",  dial: "Jigarrang", diameter: 40, water: 100,  ref: "126711CHNR", emoji: "🟤", desc: "Qo'ng'ir-qora 'Root Beer' bezel. Ikki rangli oltin qobiq bilan noyob model." , image: "https://lyutik252005-web.github.io/rolex-bot/gmt-master-2-rootbeer.webp" },
+  { id: 10, name: "Datejust 36 White",          collection: "Datejust",      price: 9350,  category: "classic", material: "Po'lat",           dial: "Oq",        diameter: 36, water: 100,  ref: "126200",     emoji: "⚪", desc: "Abadiy klassik. Har qanday kiyim bilan mos keladigan universal soat." , image: "https://lyutik252005-web.github.io/rolex-bot/datejust-36-white.jpg" },
+  { id: 11, name: "Datejust 41 Blue",           collection: "Datejust",      price: 10650, category: "classic", material: "Po'lat",           dial: "Ko'k",      diameter: 41, water: 100,  ref: "126300",     emoji: "🔵", desc: "Ko'k siferblat bilan zamonaviy klassik. Ish va dam olish uchun ideal." , image: "https://lyutik252005-web.github.io/rolex-bot/datejust-41-blue.webp" },
+  { id: 12, name: "Datejust 31 Diamond",        collection: "Datejust",      price: 22450, category: "luxury",  material: "Oq Oltin + Olmos", dial: "Moviy",     diameter: 31, water: 100,  ref: "278384RBR",  emoji: "💎", desc: "Olmoslar bilan bezatilgan ayollar modeli. Hashamat va nafosatning ramzi." , image: "https://lyutik252005-web.github.io/rolex-bot/datejust-31-diamond.jpg" },
+  { id: 13, name: "Day-Date 40 Platinum",       collection: "Day-Date",      price: 87550, category: "luxury",  material: "950 Platina",      dial: "Platina",   diameter: 40, water: 100,  ref: "228206",     emoji: "🪙", desc: "Prezidentlar soati — platinadan. Dunyoning eng kuchli rahbarlar tanlovi." , image: "https://lyutik252005-web.github.io/rolex-bot/day-date-platinum.webp" },
+  { id: 14, name: "Day-Date 40 Green",          collection: "Day-Date",      price: 67350, category: "luxury",  material: "18k Sariq Oltin",  dial: "Yashil",    diameter: 40, water: 100,  ref: "228238",     emoji: "💚", desc: "Prezidentlar soati, yashil siferblat. So'nggi yillarda eng ommabop rang." , image: "https://lyutik252005-web.github.io/rolex-bot/day-date-green.webp" },
+  { id: 15, name: "Day-Date 36 Diamond",        collection: "Day-Date",      price: 71250, category: "luxury",  material: "Oltin + Olmoslar", dial: "Sariq",     diameter: 36, water: 100,  ref: "128348RBR",  emoji: "✨", desc: "Olmoslar bilan bezatilgan Day-Date. Har bir tosh qo'lda o'rnatilgan." , image: "https://lyutik252005-web.github.io/rolex-bot/day-date-36-diamond.webp" },
+  { id: 16, name: "Explorer I",                 collection: "Explorer",      price: 8950,  category: "sport",   material: "Po'lat",           dial: "Qora",      diameter: 36, water: 100,  ref: "124270",     emoji: "🏔️", desc: "Edmund Hillary 1953-yilda Everestga shu soat bilan chiqgan. Afsonaviy model." , image: "https://lyutik252005-web.github.io/rolex-bot/explorer-1.jpg" },
+  { id: 17, name: "Explorer II White",          collection: "Explorer",      price: 11250, category: "sport",   material: "Po'lat",           dial: "Oq",        diameter: 42, water: 100,  ref: "226570",     emoji: "🧭", desc: "G'orlar va qutb ekspeditsiyalari uchun yaratilgan. Yirik siferblat, aniq ko'rish." , image: "https://lyutik252005-web.github.io/rolex-bot/explorer-2-white.jpg" },
+  { id: 18, name: "Sea-Dweller",                collection: "Sea-Dweller",   price: 17950, category: "sport",   material: "Po'lat",           dial: "Qora",      diameter: 43, water: 1220, ref: "126600",     emoji: "🌊", desc: "Professional dalgʻichlar uchun. 1220 metr chuqurlikka chidamli." , image: "https://lyutik252005-web.github.io/rolex-bot/sea-dweller-43.jpg" },
+  { id: 19, name: "Deepsea D-Blue",             collection: "Sea-Dweller",   price: 21950, category: "sport",   material: "Po'lat",           dial: "Ko'k-Qora", diameter: 44, water: 3900, ref: "136660",     emoji: "🌌", desc: "3900 metr chuqurlikka chidamli. James Cameron bilan ishlab chiqilgan." , image: "https://lyutik252005-web.github.io/rolex-bot/deepsea-d-blue.jpg" },
+  { id: 20, name: "Sky-Dweller Two-Tone",       collection: "Sky-Dweller",   price: 52350, category: "luxury",  material: "18k Ikki Rangli",  dial: "Kumush",    diameter: 42, water: 100,  ref: "326933",     emoji: "✈️", desc: "Ikki vaqt zonasi va yillik taqvim. Eng murakkab Rolex mexanizmi." , image: "https://lyutik252005-web.github.io/rolex-bot/skydweller-two-tone.webp" },
+  { id: 21, name: "Sky-Dweller White Gold",     collection: "Sky-Dweller",   price: 71450, category: "luxury",  material: "18k Oq Oltin",     dial: "Ko'k",      diameter: 42, water: 100,  ref: "336939",     emoji: "🌙", desc: "Oq oltin qobiqli lyuks sayohatchi soati. Biznes sayohatlari uchun ideal." , image: "https://lyutik252005-web.github.io/rolex-bot/skydweller-white-gold.jpg" },
+  { id: 22, name: "Milgauss Z-Blue",            collection: "Milgauss",      price: 12450, category: "sport",   material: "Po'lat",           dial: "Ko'k",      diameter: 40, water: 100,  ref: "116400GV",   emoji: "⚡", desc: "Magnit maydondan himoyalangan. CERN laboratoriyasi uchun yaratilgan." , image: "https://lyutik252005-web.github.io/rolex-bot/Milgauss-40.jpg" },
+  { id: 23, name: "Air-King",                   collection: "Air-King",      price: 9350,  category: "sport",   material: "Po'lat",           dial: "Qora",      diameter: 40, water: 100,  ref: "126900",     emoji: "🛩️", desc: "Aviatsiya ruhidagi klassik model. Uchuvchilar uchun mo'ljallangan." , image: "https://lyutik252005-web.github.io/rolex-bot/air-king.jpg" },
+  { id: 24, name: "Oyster Perpetual 41 Green",  collection: "Oyster Perp.",  price: 7950,  category: "classic", material: "Po'lat",           dial: "Yashil",    diameter: 41, water: 100,  ref: "124300",     emoji: "🟢", desc: "Sof va minimalistik dizayn. Rolex ning eng arzon modeli — sifat kafolatli." , image: "https://lyutik252005-web.github.io/rolex-bot/oyster-perpetual-green.png" },
+  { id: 25, name: "Oyster Perpetual 36 Blue",   collection: "Oyster Perp.",  price: 7250,  category: "classic", material: "Po'lat",           dial: "Ko'k",      diameter: 36, water: 100,  ref: "126000",     emoji: "🔷", desc: "36mm oʻlchamda zamonaviy Rolex. Yengil va qulay, har kuni uchun." , image: "https://lyutik252005-web.github.io/rolex-bot/oyster-perpetual-blue.jpg" },
+  { id: 26, name: "Cellini Time",               collection: "Cellini",       price: 18950, category: "luxury",  material: "18k Oq Oltin",     dial: "Kumush",    diameter: 39, water: 50,   ref: "50709RBR",   emoji: "🎩", desc: "Klassik dresswatch. Kechki tadbirlar va rasmiy uchrashuvlar uchun ideal." , image: "https://lyutik252005-web.github.io/rolex-bot/cellini-time.webp" },
+  { id: 27, name: "Datejust 41 Jubilee",        collection: "Datejust",      price: 11850, category: "classic", material: "Ikki Rangli",      dial: "Kumush",    diameter: 41, water: 100,  ref: "126333",     emoji: "👑", desc: "Jubilee bracelet bilan hashamatli klassik. Biznesman tanlovi." , image: "https://lyutik252005-web.github.io/rolex-bot/datejust-jubilee.webp" },
+  { id: 28, name: "GMT-Master II Gold Green",   collection: "GMT-Master II", price: 47850, category: "luxury",  material: "18k Sariq Oltin",  dial: "Yashil",    diameter: 40, water: 100,  ref: "126718GRNR", emoji: "🏆", desc: "Yashil-qora bezel, to'liq sariq oltin. Eng prestige GMT modeli." , image: "https://lyutik252005-web.github.io/rolex-bot/gmt-master-2-gold-green.webp" },
+  { id: 29, name: "Daytona Diamond Blue",       collection: "Daytona",       price: 96500, category: "luxury",  material: "Oq Oltin + Olmos", dial: "Moviy",     diameter: 40, water: 100,  ref: "116589RBOW", emoji: "🩵", desc: "Olmos bezali eksklyuziv Daytona. Faqat maxsus buyurtma bilan." , image: "https://lyutik252005-web.github.io/rolex-bot/daytona-diamond-blue.jpg" },
+  { id: 30, name: "Day-Date Emerald",           collection: "Day-Date",      price: 89750, category: "luxury",  material: "Sariq Oltin+Zumrad",dial: "Zumrad",   diameter: 40, water: 100,  ref: "228238EM",   emoji: "💚", desc: "Zumrad toshlar bilan bezatilgan. Dunyoda faqat bir necha dona mavjud." , image: "https://lyutik252005-web.github.io/rolex-bot/day-date-emerald.webp" },
+  { id: 31, name: "Submariner Hulk",            collection: "Submariner",    price: 23450, category: "sport",   material: "Po'lat",           dial: "Yashil",    diameter: 40, water: 300,  ref: "116610LV",   emoji: "🟩", desc: "Yashil siferblat va yashil bezel — 'Hulk' laqabi bilan mashhur." , image: "https://lyutik252005-web.github.io/rolex-bot/submariner-hulk.jpg" },
+  { id: 32, name: "GMT Sprite",                 collection: "GMT-Master II", price: 18750, category: "sport",   material: "Po'lat",           dial: "Qora",      diameter: 40, water: 100,  ref: "126720VTNR", emoji: "🟢", desc: "Yashil-qora 'Sprite' bezel. Chap tomondagi toj bilan noyob dizayn." , image: "https://lyutik252005-web.github.io/rolex-bot/gmt-master-2-sprite.jpg" }
+];
